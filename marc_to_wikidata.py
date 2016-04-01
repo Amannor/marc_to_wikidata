@@ -25,15 +25,21 @@ class MarcClaimRobot(WikidataBot):
         for claim in self.claims:
             # if no viaf exist
             if 'P214' not in claim:
-                # TODO: can we find relaxation that isn't based on VIAF? maybe just name?
+                # TODO: can we find relaxation that isn't based on VIAF?
+                # maybe search on the name, then compare all the result with date of birth & date of death & country
+                # and other basic information, and if at least 2 of 3 exist and match - it's a goal.
                 continue
             item = get_entity_by_viaf(claim['P214'])
             item.get()
             self.treat(item, claim)
 
+    # Deals with existing records from WikiData
+    # should check if existing attributes equal
+    # add reference or new claim accordingly
     def treat(self, item, claim):
         print(claim)
         # TODO: create wikidata claims. see claimit to see how to do it
+        #item.addClaim()
         raise NotImplemented
 
 
@@ -55,6 +61,7 @@ def parse_records(marc_records):
         yield wikidata_rec
 
 
+# Finds the matching record in Wikidata by VIAF identifier
 def get_entity_by_viaf(viaf):
     sparql = "SELECT ?item WHERE { ?item wdt:P214 ?VIAF filter(?VIAF = '%s') }" % viaf
     entities = pagegenerators.WikidataSPARQLPageGenerator(sparql, site=repo)

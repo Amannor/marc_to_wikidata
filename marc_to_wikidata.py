@@ -53,6 +53,8 @@ def parse_records(marc_records):
             localname = name.find('slim:subfield[@code="a"]', namespaces)
             wikidata_rec[lang] = localname
             # date of birth
+        # add here parsing of data from 670 fields
+        # put into wikidata_rec['<<wikidata attribute identifier>>'] =
         for wikidata_prop, xpath_query in property_to_xpath.items():
             query_res = record.find(xpath_query, namespaces)
             if query_res:

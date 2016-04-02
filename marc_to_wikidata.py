@@ -1,5 +1,6 @@
 #!/bin/python
-
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from lxml import objectify
 
 import pywikibot
@@ -50,7 +51,7 @@ class MarcClaimRobot(WikidataBot):
             if not item:
                 create_new_record_in_wikidata(record)
 
-            wikidata_record = constructRecordFromMarc(record)
+            wikidata_record = self.constructRecordFromMarc(record)
             item.get()
             self.treat(item, record)
             self.i = self.i +1
@@ -68,7 +69,9 @@ class MarcClaimRobot(WikidataBot):
         print "claim "+str(self.i)
         print claim
         # TODO: create wikidata claims. see claimit to see how to do it
-        raise NotImplemented
+
+        #item.addClaim()        
+        #raise NotImplemented
 
 def parse_records(marc_records):
     i = 0
@@ -76,7 +79,11 @@ def parse_records(marc_records):
         print "record"+str(i)
         i = i + 1
         wikidata_rec = dict()
+        person_names_dict = dict()
+        birth_place_dict = dict()
+        death_place_dict = dict()
 
+        # parse local names
         names = record.findall('slim:datafield[@tag="100"]/slim:subfield[@code="9"]/..', namespaces)
 
 
@@ -85,11 +92,34 @@ def parse_records(marc_records):
             lang = name.find('slim:subfield[@code="9"]', namespaces)
             localname = name.find('slim:subfield[@code="a"]', namespaces).text
             localname_parts = localname.split(',')
-            wikidata_rec[lang] = localname_parts[0].strip()
+            person_names_dict[lang] = localname_parts[0].strip()
             if len(localname_parts) > 1:
-                wikidata_rec[lang] = localname_parts[1].strip() + ' ' + wikidata_rec[lang]
-            # date of birth
-        # add here parsing of data from 670 fields
+                person_names_dict[lang] = localname_parts[1].strip() + ' ' + person_names_dict[lang]
+            
+        wikidata_rec["person_names"]=person_names_dict
+
+        # place of birth / death
+        historic_comments = record.findall('slim:datafield[@tag="678"]/slim:subfield[@code="a"]/..', namespaces)
+        #print('***parse historic comments***')
+        for comment in historic_comments:
+                #print(birth_or_death)
+                historic_comment = comment.find('slim:subfield[@code="a"]', namespaces)
+                #get the text for the historic comment in unicode
+                encoded_comment = u''.join(historic_comment.text).encode('utf-8').strip()
+                if encoded_comment.decode('utf-8').startswith(u"מקום לידה: "):
+                    #parse birth date parameter
+                    birth_place = parse_birth_or_death_place("birth_place",encoded_comment.decode('utf-8').partition(u"מקום לידה: ")[2])
+                    if (birth_place is not None):
+                        birth_place_dict[birth_place[1]]=birth_place[2]   
+                if encoded_comment.decode('utf-8').startswith(u"מקום פטירה: "):
+                    #parse death place
+                    death_place = parse_birth_or_death_place("death_place",encoded_comment.decode('utf-8').partition(u"מקום פטירה: ")[2])
+                    if (death_place is not None):
+                        death_place_dict[death_place[1]]=death_place[2] 
+        
+        wikidata_rec["birth_places"]=birth_place_dict
+        wikidata_rec["death_places"]=death_place_dict
+
         # put into wikidata_rec['<<wikidata attribute identifier>>'] =
         for wikidata_prop, xpath_query in property_to_xpath.items():
             query_res = record.find(xpath_query, namespaces)
@@ -97,6 +127,38 @@ def parse_records(marc_records):
                 wikidata_rec[wikidata_prop] = query_res
 
         yield wikidata_rec
+
+#, return tuple (lang code - 'eng' or 'heb', and actual place) or None if input is bad
+def parse_birth_or_death_place(place_type,place):
+    """
+    Parse birth/death place for a person based on NLI authority records
+    (clean it from unwanted stuff in square brackets)
+
+    If args is an empty list, sys.argv is used.
+
+    @param place_type: type of place - 'birth_place' or 'death_place'
+    @param place: the unicode string of the place
+    @return a three item tuple containing (place_type,language ('eng' or 'heb'),parsed place) or None on invalid input
+    """
+    
+    # drop stuff within brackets 
+    if place.find('[') >= 0 and place.find(']') >= 0:
+        #print ("indexes: [: {0} ]: {1} ".format(birthplace.index('['),birthplace.index(']')))
+        place_without_brackets = place.partition(place[place.index('['):place.index(']')+1])
+        if (len(place_without_brackets[0])==0 and len(place_without_brackets[2])==0):
+            #print('received birthplace within brackets - skipping')
+            return None 
+        else:
+            place = place_without_brackets[0]+place_without_brackets[2]  
+        #print(birthplace.decode('utf-8').partition(birthplace[birthplace.index('['):birthplace.index(']')]))
+
+    if any(u"\u0590" <= c <= u"\u05EA" for c in place):
+        lang='heb'
+    else:
+        lang='eng'
+    tup = (place_type,lang,place)
+    #print ('output tuple: {0}'.format(tup))
+    return tup
 
 
 # Finds the matching record in Wikidata by VIAF identifier

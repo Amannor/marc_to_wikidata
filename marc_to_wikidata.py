@@ -33,6 +33,27 @@ language_map = {
     'lat': 'en',
 }
 
+# a dictionary of professions and "hints" that might reinforce confidence in their parsing in case of
+# ambiguous meanings
+# TODO: change this from map to a different data structure that contains synonyms and clues, separately!!!
+profession_map = {
+    'רב': ['קהילה','קהילות','קהילת'],
+    'אב\"ד': ['אב בית דין'],
+    'אדמו\"ר': ['אדמור'],
+    'אדירכל': [],
+    'מדען': [],
+    'איש-צבא': ['מצביא','איש צבא', 'ראש המטה הכללי', 'רמטכ\"ל'],
+    'אמן': [],
+    'דיין': [],
+    'דרשן': [],
+    'היסטוריון': [],
+    'חבר כנסת': ['חבר-כנסת','ח\"כ'],
+    'מורה': [],
+    'משורר': [],
+    'מלחין': ['מלחינה'],
+    'סופר': ['סופרת']
+}
+
 
 class MarcClaimRobot(WikidataBot):
     def __init__(self, records, **kwargs):
@@ -82,8 +103,9 @@ def parse_records(marc_records):
         person_names_dict = dict()
         birth_place_dict = dict()
         death_place_dict = dict()
+        professions_dict = dict()
 
-        # parse local names
+        ### parse local names
         names = record.findall('slim:datafield[@tag="100"]/slim:subfield[@code="9"]/..', namespaces)
 
 
@@ -98,7 +120,7 @@ def parse_records(marc_records):
             
         wikidata_rec["person_names"]=person_names_dict
 
-        # place of birth / death
+        ### place of birth / death
         historic_comments = record.findall('slim:datafield[@tag="678"]/slim:subfield[@code="a"]/..', namespaces)
         #print('***parse historic comments***')
         for comment in historic_comments:
@@ -116,6 +138,13 @@ def parse_records(marc_records):
                     death_place = parse_birth_or_death_place("death_place",encoded_comment.decode('utf-8').partition(u"מקום פטירה: ")[2])
                     if (death_place is not None):
                         death_place_dict[death_place[1]]=death_place[2] 
+
+                if encoded_comment.decode('utf-8').startswith(u"מקצוע: "):
+                    #parse death place
+                    profession = parse_profession(encoded_comment.decode('utf-8').partition(u"מקצוע: ")[2])
+                    if (death_place is not None):
+                        death_place_dict[death_place[1]]=death_place[2] 
+
         
         wikidata_rec["birth_places"]=birth_place_dict
         wikidata_rec["death_places"]=death_place_dict
@@ -157,8 +186,22 @@ def parse_birth_or_death_place(place_type,place):
     else:
         lang='eng'
     tup = (place_type,lang,place)
-    #print ('output tuple: {0}'.format(tup))
+    print ('output tuple: {0}'.format(tup))
     return tup
+
+def parse_profession(profession):
+    print ("Got input profession {0}".format(profession));
+    for (accepted_professions, hints) in profession_map.iteritems():
+        if (accepted_professions == profession):
+            print ("found accepted profession!")
+            return profession
+        elif (profession in hints):
+            print ("profession is in hints!!")
+            return profession
+    
+    print("Input for {0} did not yield a profession".format(profession))
+    return None
+        
 
 
 # Finds the matching record in Wikidata by VIAF identifier

@@ -67,7 +67,7 @@ class MarcClaimRobot(WikidataBot):
     # should check if existing attributes equal
     # add reference or new claim accordingly
     def treat(self, item, nliProposedUnparsedClaim):
-        print "claim "+str(self.i)
+        print("claim "+str(self.i))
         print("the wiki data item: ")
         print(item)
         print("nliProposedUnparsedClaim: ")
@@ -94,17 +94,17 @@ class MarcClaimRobot(WikidataBot):
 
         print (item.id)
         wikidata_record = TestCopier.new_test_item_from_production(item.id)
-        print "TestCopier created a new record under test.wikidata.org %s" % wikidata_record
+        print("TestCopier created a new record under test.wikidata.org %s" % wikidata_record)
 
         data = item.get("wikidata")
         wdClaims = data.get("claims")
         print ("there are %d claims in wd" % len(wdClaims))
         print ("there are %d proposed claims in nli" % len(nliProposedUnparsedClaim))
 
-        nli_p_Claims = filter(lambda aClaim : isinstance(aClaim, basestring) and aClaim.startswith('P'), nliProposedUnparsedClaim)
+        nli_p_Claims = filter(lambda aClaim : isinstance(aClaim, str) and aClaim.startswith('P'), nliProposedUnparsedClaim)
 
         for nliClaim in nli_p_Claims:
-            print nliClaim + " passed the P test!"
+            print (nliClaim + " passed the P test!")
 
         for nlipClaim in nli_p_Claims:
             if nlipClaim in wdClaims.keys():
@@ -127,7 +127,7 @@ class MarcClaimRobot(WikidataBot):
 def parse_records(marc_records):
     i = 0
     for record in marc_records:
-        print "record"+str(i)
+        print("record"+str(i))
         i = i + 1
         wikidata_rec = dict()
         person_names_dict = dict()

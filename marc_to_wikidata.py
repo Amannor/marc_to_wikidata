@@ -5,6 +5,8 @@ from lxml import objectify
 import pywikibot
 from pywikibot import pagegenerators, WikidataBot
 
+import TestCopier
+
 repo = pywikibot.Site().data_repository()
 namespaces = {'slim': 'http://www.loc.gov/MARC21/slim'}
 property_to_xpath = {
@@ -59,7 +61,7 @@ class MarcClaimRobot(WikidataBot):
     # This will enable the treat function to perform comparisons of claims before saving data into Wikidata
     def constructRecordFromMarc(self,record):
         wikidata_record = ""
-        return wikidata_record
+        return record
 
     # Deals with existing records from WikiData
     # should check if existing attributes equal
@@ -69,6 +71,7 @@ class MarcClaimRobot(WikidataBot):
         print("the wiki data item: ")
         print(item)
         print("nliProposedUnparsedClaim: ")
+
 #        for (key, value) in sorted(nliProposedUnparsedClaim.items()):
 #            print('%s:: %s' % (key, unicode(value)))
 
@@ -89,19 +92,25 @@ class MarcClaimRobot(WikidataBot):
         #      Or, the proposed property value is not contained in this property,
         #           so - let's add it, along with a reference to NLI.
 
+        print (item.id)
+        wikidata_record = TestCopier.new_test_item_from_production(item.id)
+        print "TestCopier created a new record under test.wikidata.org %s" % wikidata_record
+
         data = item.get("wikidata")
         wdClaims = data.get("claims")
         print ("there are %d claims in wd" % len(wdClaims))
         print ("there are %d proposed claims in nli" % len(nliProposedUnparsedClaim))
 
         nli_p_Claims = filter(lambda aClaim : isinstance(aClaim, basestring) and aClaim.startswith('P'), nliProposedUnparsedClaim)
-#        nli_p_Claims = filter(lambda aClaim : isinstance(aClaim, basestring) and aClaim.startswith('P'), nliProposedUnparsedClaim)
+
         for nliClaim in nli_p_Claims:
             print nliClaim + " passed the P test!"
 
         for nlipClaim in nli_p_Claims:
             if nlipClaim in wdClaims.keys():
                 print ("nlipClaim %s is also in wdClaims" % nlipClaim)
+
+#        nliProposedClaims
 
         raise NotImplemented
         for wdClaimPropertyName in sorted(wdClaims.keys()):

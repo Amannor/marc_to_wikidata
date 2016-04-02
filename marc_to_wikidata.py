@@ -1,6 +1,5 @@
-#!/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 from lxml import objectify
 
 import pywikibot
@@ -65,13 +64,56 @@ class MarcClaimRobot(WikidataBot):
     # Deals with existing records from WikiData
     # should check if existing attributes equal
     # add reference or new claim accordingly
-    def treat(self, item, claim):
+    def treat(self, item, nliProposedUnparsedClaim):
         print "claim "+str(self.i)
-        print claim
+        print("the wiki data item: ")
+        print(item)
+        print("nliProposedUnparsedClaim: ")
+#        for (key, value) in sorted(nliProposedUnparsedClaim.items()):
+#            print('%s:: %s' % (key, unicode(value)))
+
+        ## print('\n'.join(['%s:: %s' % (key, unicode(str(value))) for (key, value) in sorted(nliProposedUnparsedClaim.items())]))
         # TODO: create wikidata claims. see claimit to see how to do it
 
-        #item.addClaim()        
-        #raise NotImplemented
+        # several options here:
+        #   either the wikidata item does not contain the proposed NLI claim
+        #   or the wikidata item DOES contain the proposed NLI claim
+        #
+        # If the wikidata item does not contain the NLI claim
+        #      let's create this claim, add a wikidata reference to NLI database, add save(?) that.
+        #
+        # If the wikidata item DOES contain the proposed NLI claim
+        #      it's either the proposed property value is the same as the property in wikidata
+        #           and then - it's either the NLI reference is already there, or not...
+        #                      if it's not there - let's add it.
+        #      Or, the proposed property value is not contained in this property,
+        #           so - let's add it, along with a reference to NLI.
+
+        data = item.get("wikidata")
+        wdClaims = data.get("claims")
+        print ("there are %d claims in wd" % len(wdClaims))
+        print ("there are %d proposed claims in nli" % len(nliProposedUnparsedClaim))
+
+        nli_p_Claims = filter(lambda aClaim : isinstance(aClaim, basestring) and aClaim.startswith('P'), nliProposedUnparsedClaim)
+#        nli_p_Claims = filter(lambda aClaim : isinstance(aClaim, basestring) and aClaim.startswith('P'), nliProposedUnparsedClaim)
+        for nliClaim in nli_p_Claims:
+            print nliClaim + " passed the P test!"
+
+        for nlipClaim in nli_p_Claims:
+            if nlipClaim in wdClaims.keys():
+                print ("nlipClaim %s is also in wdClaims" % nlipClaim)
+
+        raise NotImplemented
+        for wdClaimPropertyName in sorted(wdClaims.keys()):
+            print("claim's id property: " + wdClaimPropertyName)
+            wdClaim = wdClaims[wdClaimPropertyName][0]
+
+            ## diff the found wikidata claim
+
+#            print('\n'.join(['%s:: %s' % (key, value) for (key, value) in sorted(wdClaim.__dict__.items())]))
+            print("-----------------------")
+        #item.addClaim()
+        raise NotImplemented
 
 def parse_records(marc_records):
     i = 0

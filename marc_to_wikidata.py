@@ -48,7 +48,7 @@ class MarcClaimRobot(WikidataBot):
             if not item:
                 item = get_suggested_entity(record)
             if not item:
-                continue
+                create_new_record_in_wikidata(record)
 
             wikidata_record = constructRecordFromMarc(record)
             item.get()
@@ -179,6 +179,8 @@ def get_suggested_entity(claim):
         raise Exception('VIAF is expected to be unique')
     return entities[0]
 
+def create_new_record_in_wikidata(record):
+    raise NotImplemented
 
 def main():
     # TODO: for now we use the example XML. in post development this should be argument

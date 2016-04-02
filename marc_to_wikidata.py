@@ -51,7 +51,7 @@ class MarcClaimRobot(WikidataBot):
             if not item:
                 continue
 
-            wikidata_record = constructRecordFromMarc(record)
+            wikidata_record = self.constructRecordFromMarc(record)
             item.get()
             self.treat(item, record)
             self.i = self.i +1

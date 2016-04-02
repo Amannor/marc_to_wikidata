@@ -35,25 +35,32 @@ language_map = {
 
 
 class MarcClaimRobot(WikidataBot):
-    def __init__(self, claims, **kwargs):
+    def __init__(self, records, **kwargs):
         super(WikidataBot, self).__init__(**kwargs)
-        self.claims = claims
+        self.records = records
 
     i = 0
     def run(self):
         
-        for claim in self.claims:
-            if 'P214' in claim:
-                item = get_entity_by_viaf(claim['P214'])
+        for record in self.records:
+            if 'P214' in record:
+                item = get_entity_by_viaf(record['P214'])
             # if no viaf exist
             if not item:
-                item = get_suggested_entity(claim)
+                item = get_suggested_entity(record)
             if not item:
                 continue
 
+            wikidata_record = constructRecordFromMarc(record)
             item.get()
-            self.treat(item, claim)
+            self.treat(item, record)
             self.i = self.i +1
+
+    # Convert a record from MarcXML to Wikidata record (in memory)
+    # This will enable the treat function to perform comparisons of claims before saving data into Wikidata
+    def constructRecordFromMarc(self,record):
+        wikidata_record = ""
+        return wikidata_record
 
     # Deals with existing records from WikiData
     # should check if existing attributes equal

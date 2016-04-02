@@ -8,11 +8,21 @@ from pywikibot import pagegenerators, WikidataBot
 repo = pywikibot.Site().data_repository()
 namespaces = {'slim': 'http://www.loc.gov/MARC21/slim'}
 property_to_xpath = {
+
     'P569': 'slim:datafield[@tag="046"]/slim:subfield[@code="f"]',  # date of birth
     'P570': 'slim:datafield[@tag="046"]/slim:subfield[@code="g"]',  # date of death
     'P19': 'slim:datafield[@tag="370"]/slim:subfield[@code="a"]',  # place of birth
     'P20': 'slim:datafield[@tag="370"]/slim:subfield[@code="b"]',  # place of death
-    'P214': 'slim:datafield[@tag="901"]/slim:subfield'  # VIAF
+    'P214': 'slim:datafield[@tag="901"]/slim:subfield',  # VIAF
+    'P21' : 'slim:datafield[@tag="375"]', # gender
+    'P1412' : 'slim:datafield[@tag="377"]', # languages spoken or wrriten
+    'P949' : 'slim:datafield[@tag="001"]', # National Library of Israel identifier
+    'P131' : 'slim:datafield[@tag="371"]/slim:subfield[@code="b"]',  # Address - place name
+    'P17' : 'slim:datafield[@tag="371"]/slim:subfield[@code="c"]',  # Address - country
+    'P106' : 'slim:datafield[@tag="372"]/slim:subfield[@code="a"]',  # Activity (Person/Intitution)
+    'P571' : 'slim:datafield[@tag="046"]/slim:subfield[@code="s"]',  # Start date of organization (110)
+    'P576' : 'slim:datafield[@tag="046"]/slim:subfield[@code="t"]',  # End date of organization (110)
+    
 }
 language_map = {
     'ara': 'ar',
@@ -28,7 +38,9 @@ class MarcClaimRobot(WikidataBot):
         super(WikidataBot, self).__init__(**kwargs)
         self.claims = claims
 
+    i = 0
     def run(self):
+        
         for claim in self.claims:
             if 'P214' in claim:
                 item = get_entity_by_viaf(claim['P214'])
@@ -40,19 +52,29 @@ class MarcClaimRobot(WikidataBot):
 
             item.get()
             self.treat(item, claim)
+            self.i = self.i +1
 
+    # Deals with existing records from WikiData
+    # should check if existing attributes equal
+    # add reference or new claim accordingly
     def treat(self, item, claim):
-        print(claim)
+        print "claim "+str(self.i)
+        print claim
         # TODO: create wikidata claims. see claimit to see how to do it
         raise NotImplemented
 
-
 def parse_records(marc_records):
+    i = 0
     for record in marc_records:
+        print "record"+str(i)
+        i = i + 1
         wikidata_rec = dict()
 
         names = record.findall('slim:datafield[@tag="100"]/slim:subfield[@code="9"]/..', namespaces)
+
+
         for name in names:
+
             lang = name.find('slim:subfield[@code="9"]', namespaces)
             localname = name.find('slim:subfield[@code="a"]', namespaces).text
             localname_parts = localname.split(',')
@@ -60,6 +82,8 @@ def parse_records(marc_records):
             if len(localname_parts) > 1:
                 wikidata_rec[lang] = localname_parts[1].strip() + ' ' + wikidata_rec[lang]
             # date of birth
+        # add here parsing of data from 670 fields
+        # put into wikidata_rec['<<wikidata attribute identifier>>'] =
         for wikidata_prop, xpath_query in property_to_xpath.items():
             query_res = record.find(xpath_query, namespaces)
             if query_res:
@@ -68,6 +92,7 @@ def parse_records(marc_records):
         yield wikidata_rec
 
 
+# Finds the matching record in Wikidata by VIAF identifier
 def get_entity_by_viaf(viaf):
     sparql = "SELECT ?item WHERE { ?item wdt:P214 ?VIAF filter(?VIAF = '%s') }" % viaf
     entities = pagegenerators.WikidataSPARQLPageGenerator(sparql, site=repo)

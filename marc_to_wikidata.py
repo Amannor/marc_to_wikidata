@@ -79,6 +79,9 @@ def parse_records(marc_records):
         print "record"+str(i)
         i = i + 1
         wikidata_rec = dict()
+        person_names_dict = dict()
+        birth_place_dict = dict()
+        death_place_dict = dict()
 
         # parse local names
         names = record.findall('slim:datafield[@tag="100"]/slim:subfield[@code="9"]/..', namespaces)
@@ -89,10 +92,12 @@ def parse_records(marc_records):
             lang = name.find('slim:subfield[@code="9"]', namespaces)
             localname = name.find('slim:subfield[@code="a"]', namespaces).text
             localname_parts = localname.split(',')
-            wikidata_rec[lang] = localname_parts[0].strip()
+            person_names_dict[lang] = localname_parts[0].strip()
             if len(localname_parts) > 1:
-                wikidata_rec[lang] = localname_parts[1].strip() + ' ' + wikidata_rec[lang]
+                person_names_dict[lang] = localname_parts[1].strip() + ' ' + person_names_dict[lang]
             
+        wikidata_rec["person_names"]=person_names_dict
+
         # place of birth / death
         historic_comments = record.findall('slim:datafield[@tag="678"]/slim:subfield[@code="a"]/..', namespaces)
         #print('***parse historic comments***')
@@ -103,11 +108,18 @@ def parse_records(marc_records):
                 encoded_comment = u''.join(historic_comment.text).encode('utf-8').strip()
                 if encoded_comment.decode('utf-8').startswith(u"מקום לידה: "):
                     #parse birth date parameter
-                    parse_birth_or_death_place("birth_place",encoded_comment.decode('utf-8').partition(u"מקום לידה: ")[2])
+                    birth_place = parse_birth_or_death_place("birth_place",encoded_comment.decode('utf-8').partition(u"מקום לידה: ")[2])
+                    if (birth_place is not None):
+                        birth_place_dict[birth_place[1]]=birth_place[2]   
                 if encoded_comment.decode('utf-8').startswith(u"מקום פטירה: "):
                     #parse death place
-                    parse_birth_or_death_place("death_place",encoded_comment.decode('utf-8').partition(u"מקום פטירה: ")[2])
-                 
+                    death_place = parse_birth_or_death_place("death_place",encoded_comment.decode('utf-8').partition(u"מקום פטירה: ")[2])
+                    if (death_place is not None):
+                        death_place_dict[death_place[1]]=death_place[2] 
+        
+        wikidata_rec["birth_places"]=birth_place_dict
+        wikidata_rec["death_places"]=death_place_dict
+
         # put into wikidata_rec['<<wikidata attribute identifier>>'] =
         for wikidata_prop, xpath_query in property_to_xpath.items():
             query_res = record.find(xpath_query, namespaces)

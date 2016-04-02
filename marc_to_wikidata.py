@@ -24,6 +24,13 @@ property_to_xpath = {
     'P576' : 'slim:datafield[@tag="046"]/slim:subfield[@code="t"]',  # End date of organization (110)
     
 }
+language_map = {
+    'ara': 'ar',
+    'cyr': 'ru',
+    'fre': 'fr',
+    'heb': 'he',
+    'lat': 'en',
+}
 
 
 class MarcClaimRobot(WikidataBot):
@@ -35,15 +42,14 @@ class MarcClaimRobot(WikidataBot):
     def run(self):
         
         for claim in self.claims:
+            if 'P214' in claim:
+                item = get_entity_by_viaf(claim['P214'])
             # if no viaf exist
-            if 'P214' not in claim:
-
-                print 'No viaf for claim'+str(i)
-                # TODO: can we find relaxation that isn't based on VIAF? maybe just name?
-                # maybe search on the name, then compare all the result with date of birth & date of death & country
-                # and other basic information, and if at least 2 of 3 exist and match - it's a goal.
+            if not item:
+                item = get_suggested_entity(claim)
+            if not item:
                 continue
-            item = get_entity_by_viaf(claim['P214'])
+
             item.get()
             self.treat(item, claim)
             self.i = self.i +1
@@ -70,8 +76,11 @@ def parse_records(marc_records):
         for name in names:
 
             lang = name.find('slim:subfield[@code="9"]', namespaces)
-            localname = name.find('slim:subfield[@code="a"]', namespaces)
-            wikidata_rec[lang] = localname
+            localname = name.find('slim:subfield[@code="a"]', namespaces).text
+            localname_parts = localname.split(',')
+            wikidata_rec[lang] = localname_parts[0].strip()
+            if len(localname_parts) > 1:
+                wikidata_rec[lang] = localname_parts[1].strip() + ' ' + wikidata_rec[lang]
             # date of birth
         # add here parsing of data from 670 fields
         # put into wikidata_rec['<<wikidata attribute identifier>>'] =
@@ -89,9 +98,75 @@ def get_entity_by_viaf(viaf):
     entities = pagegenerators.WikidataSPARQLPageGenerator(sparql, site=repo)
     entities = list(entities)
     if len(entities) == 0:
-        # TODO: either associate existing record with VIAF or create a new entity
-        print "len(entities) == 0:- NotImplemented\n"
-        # raise NotImplemented
+        return None
+    elif len(entities) > 1:
+        # TODO: is it possible to have multiple VIAFs?
+        raise Exception('VIAF is expected to be unique')
+    return entities[0]
+
+
+def get_suggested_entity(claim):
+    """Search for people by names and dates."""
+
+    # Matching names
+    languages_sparql = []
+    for lang in claim:
+        if lang in language_map:
+            languages_sparql.append('{ ?item rdfs:label "%(name)s"@%(lang)s }' % {
+                'name': claim[lang],
+                'lang': language_map[lang],
+            })
+    if not len(languages_sparql):
+        return None
+    languages_sparql = ' UNION '.join(languages_sparql)
+
+    # Matching birth date
+    birth_sparql = ''
+    if 'P569' in claim:
+        birth_sparql = """
+            . {
+                ?item wdt:P569 ?birthDate .
+                FILTER (datatype(?birthDate) != xsd:dateTime)
+            } UNION {
+                ?item wdt:P569 ?birthDate .
+                FILTER (year(?birthDate) = year("%(birth_date)s"^^xsd:dateTime))
+                FILTER (month(?birthDate) = month("%(birth_date)s"^^xsd:dateTime))
+                FILTER (day(?birthDate) = day("%(birth_date)s"^^xsd:dateTime))
+            }
+        """ % { 'birth_date': claim['P569'] }
+
+    # Matching death date
+    death_sparql = ''
+    if 'P570' in claim:
+        death_sparql = """
+            . {
+                ?item wdt:P570 ?deathDate .
+                FILTER (datatype(?deathDate) != xsd:dateTime)
+            } UNION {
+                ?item wdt:P570 ?deathDate .
+                FILTER (year(?deathDate) = year("%(death_date)s"^^xsd:dateTime))
+                FILTER (month(?deathDate) = month("%(death_date)s"^^xsd:dateTime))
+                FILTER (day(?deathDate) = day("%(death_date)s"^^xsd:dateTime))
+            }
+        """ % { 'death_date': claim['P570'] }
+
+    # Final request
+    sparql = """
+        SELECT DISTINCT ?item WHERE {
+            %(languages)s
+            %(birth)s
+            %(death)s
+        }
+    """ % {
+        'languages': languages_sparql,
+        'birth': birth_sparql,
+        'death': death_sparql,
+    }
+
+    entities = pagegenerators.WikidataSPARQLPageGenerator(sparql.encode('utf8'), site=repo)
+    entities = list(entities)
+    if len(entities) == 0:
+        return None
     elif len(entities) > 1:
         # TODO: is it possible to have multiple VIAFs?
         raise Exception('VIAF is expected to be unique')

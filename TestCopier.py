@@ -27,8 +27,8 @@ def new_test_item_from_production(original_id):
     """
 
     # Setting up the repos
-    repo = pywikibot.Site(WIKIDATA).data_repository()
-    test_repo = pywikibot.Site(WIKIDATA_TEST).data_repository()
+    repo = pywikibot.Site(WIKIDATA, fam='wikidata').data_repository()
+    test_repo = pywikibot.Site(WIKIDATA_TEST, fam='wikidata').data_repository()
     # The PageItem object
     entity = pywikibot.ItemPage(repo, original_id)
 
@@ -57,7 +57,6 @@ def new_test_item_from_production(original_id):
     # Creating a new PageItem
     result = test_repo.editEntity(identification, new_data, summary)
     new_test_item_id = result.get(u'entity').get('id')
-
     return new_test_item_id
 
 

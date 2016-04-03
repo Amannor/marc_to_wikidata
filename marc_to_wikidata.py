@@ -1,10 +1,11 @@
-#!/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 from lxml import objectify
 
 import pywikibot
 from pywikibot import pagegenerators, WikidataBot
+
+import TestCopier
 
 repo = pywikibot.Site().data_repository()
 namespaces = {'slim': 'http://www.loc.gov/MARC21/slim'}
@@ -31,6 +32,27 @@ language_map = {
     'fre': 'fr',
     'heb': 'he',
     'lat': 'en',
+}
+
+# a dictionary of professions and "hints" that might reinforce confidence in their parsing in case of
+# ambiguous meanings
+# TODO: change this from map to a different data structure that contains synonyms and clues, separately!!!
+profession_map = {
+    'רב': ['קהילה','קהילות','קהילת'],
+    'אב\"ד': ['אב בית דין'],
+    'אדמו\"ר': ['אדמור'],
+    'אדירכל': [],
+    'מדען': [],
+    'איש-צבא': ['מצביא','איש צבא', 'ראש המטה הכללי', 'רמטכ\"ל'],
+    'אמן': [],
+    'דיין': [],
+    'דרשן': [],
+    'היסטוריון': [],
+    'חבר כנסת': ['חבר-כנסת','ח\"כ'],
+    'מורה': [],
+    'משורר': [],
+    'מלחין': ['מלחינה'],
+    'סופר': ['סופרת']
 }
 
 
@@ -61,30 +83,81 @@ class MarcClaimRobot(WikidataBot):
     # This will enable the treat function to perform comparisons of claims before saving data into Wikidata
     def constructRecordFromMarc(self,record):
         wikidata_record = ""
-        return wikidata_record
+        return record
 
     # Deals with existing records from WikiData
     # should check if existing attributes equal
     # add reference or new claim accordingly
-    def treat(self, item, claim):
-        print "claim "+str(self.i)
-        print claim
+    def treat(self, item, nliProposedUnparsedClaim):
+        print("claim "+str(self.i))
+        print("the wiki data item: ")
+        print(item)
+        print("nliProposedUnparsedClaim: ")
+
+#        for (key, value) in sorted(nliProposedUnparsedClaim.items()):
+#            print('%s:: %s' % (key, unicode(value)))
+
+        ## print('\n'.join(['%s:: %s' % (key, unicode(str(value))) for (key, value) in sorted(nliProposedUnparsedClaim.items())]))
         # TODO: create wikidata claims. see claimit to see how to do it
 
-        #item.addClaim()        
-        #raise NotImplemented
+        # several options here:
+        #   either the wikidata item does not contain the proposed NLI claim
+        #   or the wikidata item DOES contain the proposed NLI claim
+        #
+        # If the wikidata item does not contain the NLI claim
+        #      let's create this claim, add a wikidata reference to NLI database, add save(?) that.
+        #
+        # If the wikidata item DOES contain the proposed NLI claim
+        #      it's either the proposed property value is the same as the property in wikidata
+        #           and then - it's either the NLI reference is already there, or not...
+        #                      if it's not there - let's add it.
+        #      Or, the proposed property value is not contained in this property,
+        #           so - let's add it, along with a reference to NLI.
+
+        print (item.id)
+        wikidata_record = TestCopier.new_test_item_from_production(item.id)
+        print("TestCopier created a new record under test.wikidata.org %s" % wikidata_record)
+
+        data = item.get("wikidata")
+        wdClaims = data.get("claims")
+        print ("there are %d claims in wd" % len(wdClaims))
+        print ("there are %d proposed claims in nli" % len(nliProposedUnparsedClaim))
+
+        nli_p_Claims = filter(lambda aClaim : isinstance(aClaim, str) and aClaim.startswith('P'), nliProposedUnparsedClaim)
+
+        for nliClaim in nli_p_Claims:
+            print (nliClaim + " passed the P test!")
+
+        for nlipClaim in nli_p_Claims:
+            if nlipClaim in wdClaims.keys():
+                print ("nlipClaim %s is also in wdClaims" % nlipClaim)
+
+#        nliProposedClaims
+
+        raise NotImplemented
+        for wdClaimPropertyName in sorted(wdClaims.keys()):
+            print("claim's id property: " + wdClaimPropertyName)
+            wdClaim = wdClaims[wdClaimPropertyName][0]
+
+            ## diff the found wikidata claim
+
+#            print('\n'.join(['%s:: %s' % (key, value) for (key, value) in sorted(wdClaim.__dict__.items())]))
+            print("-----------------------")
+        #item.addClaim()
+        raise NotImplemented
 
 def parse_records(marc_records):
     i = 0
     for record in marc_records:
-        print "record"+str(i)
+        print("record"+str(i))
         i = i + 1
         wikidata_rec = dict()
         person_names_dict = dict()
         birth_place_dict = dict()
         death_place_dict = dict()
+        professions_dict = dict()
 
-        # parse local names
+        ### parse local names
         names = record.findall('slim:datafield[@tag="100"]/slim:subfield[@code="9"]/..', namespaces)
 
 
@@ -99,7 +172,7 @@ def parse_records(marc_records):
             
         wikidata_rec["person_names"]=person_names_dict
 
-        # place of birth / death
+        ### place of birth / death
         historic_comments = record.findall('slim:datafield[@tag="678"]/slim:subfield[@code="a"]/..', namespaces)
         #print('***parse historic comments***')
         for comment in historic_comments:
@@ -117,6 +190,13 @@ def parse_records(marc_records):
                     death_place = parse_birth_or_death_place("death_place",encoded_comment.decode('utf-8').partition(u"מקום פטירה: ")[2])
                     if (death_place is not None):
                         death_place_dict[death_place[1]]=death_place[2] 
+
+                if encoded_comment.decode('utf-8').startswith(u"מקצוע: "):
+                    #parse death place
+                    profession = parse_profession(encoded_comment.decode('utf-8').partition(u"מקצוע: ")[2])
+                    if (death_place is not None):
+                        death_place_dict[death_place[1]]=death_place[2] 
+
         
         wikidata_rec["birth_places"]=birth_place_dict
         wikidata_rec["death_places"]=death_place_dict
@@ -158,8 +238,22 @@ def parse_birth_or_death_place(place_type,place):
     else:
         lang='eng'
     tup = (place_type,lang,place)
-    #print ('output tuple: {0}'.format(tup))
+    print ('output tuple: {0}'.format(tup))
     return tup
+
+def parse_profession(profession):
+    print ("Got input profession {0}".format(profession));
+    for (accepted_professions, hints) in profession_map.iteritems():
+        if (accepted_professions == profession):
+            print ("found accepted profession!")
+            return profession
+        elif (profession in hints):
+            print ("profession is in hints!!")
+            return profession
+    
+    print("Input for {0} did not yield a profession".format(profession))
+    return None
+        
 
 
 # Finds the matching record in Wikidata by VIAF identifier

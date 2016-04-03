@@ -108,6 +108,9 @@ http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
   <datafield tag="678" ind1=" " ind2=" ">
     <subfield code="a">תאריך עליה: עלה עם הוריו בשנת תרפ&quot;ה [1925].</subfield>
   </datafield>
+  <datafield tag="678" ind1=" " ind2=" ">
+    <subfield code="a">מקצוע: משורר</subfield>
+  </datafield>
   <datafield tag="700" ind1="1" ind2="7">
     <subfield code="a">אלתרמאן, נתן בן יצחק</subfield>
     <subfield code="2">bhb</subfield>
@@ -444,6 +447,9 @@ http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
   <datafield tag="678" ind1=" " ind2=" ">
     <subfield code="a">תאריך עליה: עלה בשנת תרס&quot;ז [1907].</subfield>
   </datafield>
+  <datafield tag="678" ind1=" " ind2=" ">
+    <subfield code="a">מקצוע: סופר</subfield>
+  </datafield>
   <datafield tag="680" ind1=" " ind2=" ">
     <subfield code="a">Hebrew catalog.</subfield>
   </datafield>
@@ -562,6 +568,9 @@ http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
   <datafield tag="670" ind1=" " ind2=" ">
     <subfield code="a">The Author&apos;s אל בורות המים</subfield>
   </datafield>
+  <datafield tag="678" ind1=" " ind2=" ">
+    <subfield code="a">מקצוע: מלחינה</subfield>
+  </datafield>
   <datafield tag="901" ind1=" " ind2=" ">
     <subfield code="a">29798132</subfield>
   </datafield>
@@ -576,6 +585,48 @@ http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
   </datafield>
   <datafield tag="985" ind1=" " ind2=" ">
     <subfield code="a">ACUM-1267</subfield>
+  </datafield>
+</record>
+
+<!-- אהרהם אסולין -->
+
+<record xmlns="http://www.loc.gov/MARC21/slim"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.loc.gov/MARC21/slim
+http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
+  <leader>     nz  a22     n  4500</leader>
+  <controlfield tag="001">001838944</controlfield>
+  <controlfield tag="005">20151015152947.0</controlfield>
+  <controlfield tag="008">151015 | azannaab|           | |||     d</controlfield>
+  <datafield tag="040" ind1=" " ind2=" ">
+    <subfield code="b">mul</subfield>
+    <subfield code="e">rda</subfield>
+  </datafield>
+  <datafield tag="100" ind1="1" ind2=" ">
+    <subfield code="a">אסולין, אברהם,</subfield>
+    <subfield code="c">מאלעד</subfield>
+    <subfield code="9">heb</subfield>
+  </datafield>
+  <datafield tag="370" ind1=" " ind2=" ">
+    <subfield code="e">El&apos;ad, Israel</subfield>
+  </datafield>
+  <datafield tag="374" ind1=" " ind2=" ">
+    <subfield code="a">Rabbi</subfield>
+  </datafield>
+  <datafield tag="375" ind1=" " ind2=" ">
+    <subfield code="a">male</subfield>
+  </datafield>
+  <datafield tag="667" ind1=" " ind2=" ">
+    <subfield code="a">רב קהילת יוצאי מרוקו באלעד.</subfield>
+  </datafield>
+  <datafield tag="670" ind1=" " ind2=" ">
+    <subfield code="a">&lt;&lt;ספר&gt;&gt; נתיבות שלום:</subfield>
+  </datafield>
+  <datafield tag="901" ind1=" " ind2=" ">
+    <subfield code="a">222144782720037786682</subfield>
+  </datafield>
+  <datafield tag="921" ind1=" " ind2=" ">
+    <subfield code="a">hjs 201510</subfield>
   </datafield>
 </record>
 

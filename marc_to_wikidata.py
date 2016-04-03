@@ -50,6 +50,7 @@ class MarcClaimRobot(WikidataBot):
                 item = get_suggested_entity(record)
             if not item:
                 create_new_record_in_wikidata(record)
+                continue
 
             wikidata_record = self.constructRecordFromMarc(record)
             item.get()

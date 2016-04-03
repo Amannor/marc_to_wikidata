@@ -115,6 +115,7 @@ class MarcClaimRobot(WikidataBot):
         #           so - let's add it, along with a reference to NLI.
 
         print (item.id)
+        # TODO: this should actually be removed - this is TESTING ONLY
         wikidata_record = TestCopier.new_test_item_from_production(item.id)
         print("TestCopier created a new record under test.wikidata.org %s" % wikidata_record)
 
@@ -123,18 +124,25 @@ class MarcClaimRobot(WikidataBot):
         print ("there are %d claims in wd" % len(wdClaims))
         print ("there are %d proposed claims in nli" % len(nliProposedUnparsedClaim))
 
+        # find the claims (structure that has an id composed of a string claim that starts with P)
+        # these are filtered and added into the nli_p_Claims
         nli_p_Claims = filter(lambda aClaim : isinstance(aClaim, str) and aClaim.startswith('P'), nliProposedUnparsedClaim)
 
+        # notify which claims have passed through the filter
         for nliClaim in nli_p_Claims:
             print (nliClaim + " passed the P test!")
 
+        # check to see if nli claims appear under wikidata claims, and notify.
         for nlipClaim in nli_p_Claims:
             if nlipClaim in wdClaims.keys():
                 print ("nlipClaim %s is also in wdClaims" % nlipClaim)
 
-#        nliProposedClaims
+        #### the idea is to have a visitor to go through the two given structures and find out the differences that should 
+        #### actually be taken and added into the wikidata structure.
 
+        #### STILL NOT IMPLEMENTED ENOUGH.
         raise NotImplemented
+
         for wdClaimPropertyName in sorted(wdClaims.keys()):
             print("claim's id property: " + wdClaimPropertyName)
             wdClaim = wdClaims[wdClaimPropertyName][0]

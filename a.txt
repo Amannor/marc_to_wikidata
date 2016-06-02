@@ -1,0 +1,8 @@
+WARNING: family and mylang are not set.
+Defaulting to family='test' and mylang='test'.
+record0
+output tuple: (u'birth_place', u'eng', u'Warsaw')
+output tuple: (u'birth_place', u'heb', u'\u05d5\u05d5\u05d0\u05e8\u05e9\u05d0')
+output tuple: (u'death_place', u'eng', u'Tel Aviv')
+output tuple: (u'death_place', u'heb', u'\u05ea\u05dc-\u05d0\u05d1\u05d9\u05d1')
+<type 'exceptions.UnicodeEncodeError'>

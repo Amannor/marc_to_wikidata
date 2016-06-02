@@ -24,7 +24,7 @@ property_to_xpath = {
     'P106' : 'slim:datafield[@tag="372"]/slim:subfield[@code="a"]',  # Activity (Person/Intitution)
     'P571' : 'slim:datafield[@tag="046"]/slim:subfield[@code="s"]',  # Start date of organization (110)
     'P576' : 'slim:datafield[@tag="046"]/slim:subfield[@code="t"]',  # End date of organization (110)
-    
+    'P106' : '', # Profession. This field can be fetched only by parse_profession func.
 }
 language_map = {
     'ara': 'ar',
@@ -66,6 +66,8 @@ class MarcClaimRobot(WikidataBot):
         
         for record in self.records:
             if 'P214' in record:
+                print ("***************** New Record with VIAF *****************")
+                print (record)
                 item = get_entity_by_viaf(record['P214'])
             # if no viaf exist
             if not item:
@@ -116,8 +118,8 @@ class MarcClaimRobot(WikidataBot):
 
         print (item.id)
         # TODO: this should actually be removed - this is TESTING ONLY
-        wikidata_record = TestCopier.new_test_item_from_production(item.id)
-        print("TestCopier created a new record under test.wikidata.org %s" % wikidata_record)
+        # wikidata_record = TestCopier.new_test_item_from_production(item.id)
+        # print("TestCopier created a new record under test.wikidata.org %s" % wikidata_record)
 
         data = item.get("wikidata")
         wdClaims = data.get("claims")
@@ -202,8 +204,9 @@ def parse_records(marc_records):
                 if encoded_comment.decode('utf-8').startswith(u"מקצוע: "):
                     #parse death place
                     profession = parse_profession(encoded_comment.decode('utf-8').partition(u"מקצוע: ")[2])
-                    if (death_place is not None):
-                        death_place_dict[death_place[1]]=death_place[2] 
+                    if (profession is not None):
+                        print("FOUND PROFESSION! {0}".format(profession))
+                        
 
         
         wikidata_rec["birth_places"]=birth_place_dict
@@ -267,7 +270,7 @@ def parse_profession(profession):
 # Finds the matching record in Wikidata by VIAF identifier
 def get_entity_by_viaf(viaf):
     sparql = "SELECT ?item WHERE { ?item wdt:P214 ?VIAF filter(?VIAF = '%s') }" % viaf
-    entities = pagegenerators.WikidataSPARQLPageGenerator(sparql, site=repo)
+    entities = pagegenerators.WikidataQueryPageGenerator(sparql, site=repo)
     entities = list(entities)
     if len(entities) == 0:
         return None
@@ -345,7 +348,8 @@ def get_suggested_entity(claim):
     return entities[0]
 
 def create_new_record_in_wikidata(record):
-    raise NotImplemented
+    print("Not Implemented!")
+    # raise NotImplemented
 
 def main():
     # TODO: for now we use the example XML. in post development this should be argument

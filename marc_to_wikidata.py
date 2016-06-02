@@ -24,7 +24,6 @@ property_to_xpath = {
     'P106' : 'slim:datafield[@tag="372"]/slim:subfield[@code="a"]',  # Activity (Person/Intitution)
     'P571' : 'slim:datafield[@tag="046"]/slim:subfield[@code="s"]',  # Start date of organization (110)
     'P576' : 'slim:datafield[@tag="046"]/slim:subfield[@code="t"]',  # End date of organization (110)
-    'P106' : '', # Profession. This field can be fetched only by parse_profession func.
 }
 language_map = {
     'ara': 'ar',
@@ -38,21 +37,82 @@ language_map = {
 # ambiguous meanings
 # TODO: change this from map to a different data structure that contains synonyms and clues, separately!!!
 profession_map = {
-    'רב': ['קהילה','קהילות','קהילת'],
-    'אב\"ד': ['אב בית דין'],
-    'אדמו\"ר': ['אדמור'],
-    'אדירכל': [],
-    'מדען': [],
-    'איש-צבא': ['מצביא','איש צבא', 'ראש המטה הכללי', 'רמטכ\"ל'],
-    'אמן': [],
-    'דיין': [],
-    'דרשן': [],
-    'היסטוריון': [],
-    'חבר כנסת': ['חבר-כנסת','ח\"כ'],
-    'מורה': [],
-    'משורר': [],
-    'מלחין': ['מלחינה'],
-    'סופר': ['סופרת']
+    'רב': {
+            'hints': ['קהילה','קהילות','קהילת'],
+            'wikidata_item': ['Q133485'],
+            'synonyms': ['רבה'],
+    },
+    'אב\"ד': {
+            'hints': ['אב בית דין'],
+            'wikidata_item': ['Q694994'],
+            'synonyms': []
+    },
+    'אדמו\"ר': {
+            'hints': [],
+            'wikidata_item': ['Q359351'],
+            'synonyms': ['אדמור'],
+    },
+    'אדירכל': {
+        'hints': [],
+        'wikidata_item': ['Q42973'],
+        'synonyms': ['אדריכלית'],
+    },
+    'מדען': {
+        'hints': [],
+        'wikidata_item': ['Q901'],
+        'synonyms': ['מדענית'],  
+    },
+    'איש-צבא': {
+        'hints': [],
+        'wikidata_item': ['Q220098'],
+        'synonyms':['מצביא','איש צבא', 'ראש המטה הכללי', 'רמטכ\"ל'],
+    },
+    'אמן':  {
+        'hints': [],
+        'wikidata_item': ['Q483501'],
+        'synonyms':['אמנית']
+    },
+    'דיין': {
+        'hints': [],
+        'wikidata_item': ['Q3570351'],
+        'synonyms':['דיינית']
+    },
+    'דרשן': {
+        'hints': [],
+        'wikidata_item': ['Q1884050'],
+        'synonyms':[]
+    },
+    'היסטוריון': {
+        'hints': [],
+        'wikidata_item': ['Q201788'],
+        'synonyms':['']
+    },
+    'חבר כנסת': {
+        'hints': [],
+        'wikidata_item': ['Q4047513'],
+        'synonyms':['חבר-כנסת','ח\"כ'],
+    },
+
+    'מורה': {
+        'hints': [],
+        'wikidata_item': ['Q37226'],
+        'synonyms':['']
+    },
+    'משורר': {
+        'hints': [],
+        'wikidata_item': ['Q49757'],
+        'synonyms':['משוררת']
+    },
+    'מלחין': {
+        'hints': [],
+        'wikidata_item': ['Q36834'],
+        'synonyms': ['מלחינה'],
+    },
+    'סופר': { 
+        'hints': [],
+        'wikidata_item': ['Q36180'],
+        'synonyms': ['סופרת']
+    }
 }
 
 
@@ -258,7 +318,7 @@ def parse_profession(profession):
         if (accepted_professions == profession):
             print ("found accepted profession!")
             return profession
-        elif (profession in hints):
+        elif (profession in hints['synonyms']):
             print ("profession is in hints!!")
             return profession
     

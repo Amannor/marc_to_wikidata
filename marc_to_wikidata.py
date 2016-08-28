@@ -4,8 +4,8 @@ from lxml import objectify
 
 import pywikibot
 from pywikibot import pagegenerators, WikidataBot
-from Fields.datebirthndeath import *
 from Fields.profession import parse_profession
+from Fields.datebirthndeath import *
 from searchEntityNoViaf import get_suggested_entity
 from storeInWikidata import create_new_record_in_wikidata
 import TestCopier
@@ -164,21 +164,21 @@ def parse_records(marc_records):
                 #print(birth_or_death)
                 historic_comment = comment.find('slim:subfield[@code="a"]', namespaces)
                 #get the text for the historic comment in unicode
-                encoded_comment = u''.join(historic_comment.text).encode('utf-8').strip()
-                if encoded_comment.decode('utf-8').startswith(u"מקום לידה: "):
+                encoded_comment = ''.join(historic_comment.text).strip()
+                if encoded_comment.startswith(u"מקום לידה: "):
                     #parse birth date parameter
-                    birth_place = parse_birth_or_death_place("birth_place",encoded_comment.decode('utf-8').partition(u"מקום לידה: ")[2])
+                    birth_place = parse_birth_or_death_place("birth_place",encoded_comment.partition(u"מקום לידה: ")[2])
                     if (birth_place is not None):
                         birth_place_dict[birth_place[1]]=birth_place[2]   
-                if encoded_comment.decode('utf-8').startswith(u"מקום פטירה: "):
+                if encoded_comment.startswith(u"מקום פטירה: "):
                     #parse death place
-                    death_place = parse_birth_or_death_place("death_place",encoded_comment.decode('utf-8').partition(u"מקום פטירה: ")[2])
+                    death_place = parse_birth_or_death_place("death_place",encoded_comment.partition(u"מקום פטירה: ")[2])
                     if (death_place is not None):
                         death_place_dict[death_place[1]]=death_place[2] 
 
-                if encoded_comment.decode('utf-8').startswith(u"מקצוע: "):
+                if encoded_comment.startswith(u"מקצוע: "):
                     #parse death place
-                    profession = parse_profession(encoded_comment.decode('utf-8').partition(u"מקצוע: ")[2])
+                    profession = parse_profession(encoded_comment.partition("מקצוע: ")[2])
                     if (profession is not None):
                         print("FOUND PROFESSION! {0}".format(profession))
                         

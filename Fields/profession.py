@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # a dictionary of professions and "hints" that might reinforce confidence in their parsing in case of
 # ambiguous meanings
 # TODO: change this from map to a different data structure that contains synonyms and clues, separately!!!
@@ -82,8 +83,9 @@ profession_map = {
 
 
 def parse_profession(profession):
+    profession = profession.encode("utf-8")
     print ("Got input profession {0}".format(profession));
-    for (accepted_professions, hints) in profession_map.iteritems():
+    for (accepted_professions, hints) in profession_map.items():
         if (accepted_professions == profession):
             print ("found accepted profession!")
             return profession

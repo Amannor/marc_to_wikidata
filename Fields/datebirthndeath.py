@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #, return tuple (lang code - 'eng' or 'heb', and actual place) or None if input is bad
 def parse_birth_or_death_place(place_type,place):
     """

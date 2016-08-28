@@ -24,8 +24,6 @@ property_to_xpath = {
     'P106' : 'slim:datafield[@tag="372"]/slim:subfield[@code="a"]',  # Activity (Person/Intitution)
     'P571' : 'slim:datafield[@tag="046"]/slim:subfield[@code="s"]',  # Start date of organization (110)
     'P576' : 'slim:datafield[@tag="046"]/slim:subfield[@code="t"]',  # End date of organization (110)
-    'P106' : '', # Profession. This field can be fetched only smartly by parse_profession
-    
 }
 language_map = {
     'ara': 'ar',
@@ -39,21 +37,82 @@ language_map = {
 # ambiguous meanings
 # TODO: change this from map to a different data structure that contains synonyms and clues, separately!!!
 profession_map = {
-    'רב': ['קהילה','קהילות','קהילת'],
-    'אב\"ד': ['אב בית דין'],
-    'אדמו\"ר': ['אדמור'],
-    'אדירכל': [],
-    'מדען': [],
-    'איש-צבא': ['מצביא','איש צבא', 'ראש המטה הכללי', 'רמטכ\"ל'],
-    'אמן': [],
-    'דיין': [],
-    'דרשן': [],
-    'היסטוריון': [],
-    'חבר כנסת': ['חבר-כנסת','ח\"כ'],
-    'מורה': [],
-    'משורר': [],
-    'מלחין': ['מלחינה'],
-    'סופר': ['סופרת']
+    'רב': {
+            'hints': ['קהילה','קהילות','קהילת'],
+            'wikidata_item': ['Q133485'],
+            'synonyms': ['רבה'],
+    },
+    'אב\"ד': {
+            'hints': ['אב בית דין'],
+            'wikidata_item': ['Q694994'],
+            'synonyms': []
+    },
+    'אדמו\"ר': {
+            'hints': [],
+            'wikidata_item': ['Q359351'],
+            'synonyms': ['אדמור'],
+    },
+    'אדירכל': {
+        'hints': [],
+        'wikidata_item': ['Q42973'],
+        'synonyms': ['אדריכלית'],
+    },
+    'מדען': {
+        'hints': [],
+        'wikidata_item': ['Q901'],
+        'synonyms': ['מדענית'],  
+    },
+    'איש-צבא': {
+        'hints': [],
+        'wikidata_item': ['Q220098'],
+        'synonyms':['מצביא','איש צבא', 'ראש המטה הכללי', 'רמטכ\"ל'],
+    },
+    'אמן':  {
+        'hints': [],
+        'wikidata_item': ['Q483501'],
+        'synonyms':['אמנית']
+    },
+    'דיין': {
+        'hints': [],
+        'wikidata_item': ['Q3570351'],
+        'synonyms':['דיינית']
+    },
+    'דרשן': {
+        'hints': [],
+        'wikidata_item': ['Q1884050'],
+        'synonyms':[]
+    },
+    'היסטוריון': {
+        'hints': [],
+        'wikidata_item': ['Q201788'],
+        'synonyms':['']
+    },
+    'חבר כנסת': {
+        'hints': [],
+        'wikidata_item': ['Q4047513'],
+        'synonyms':['חבר-כנסת','ח\"כ'],
+    },
+
+    'מורה': {
+        'hints': [],
+        'wikidata_item': ['Q37226'],
+        'synonyms':['']
+    },
+    'משורר': {
+        'hints': [],
+        'wikidata_item': ['Q49757'],
+        'synonyms':['משוררת']
+    },
+    'מלחין': {
+        'hints': [],
+        'wikidata_item': ['Q36834'],
+        'synonyms': ['מלחינה'],
+    },
+    'סופר': { 
+        'hints': [],
+        'wikidata_item': ['Q36180'],
+        'synonyms': ['סופרת']
+    }
 }
 
 
@@ -67,6 +126,8 @@ class MarcClaimRobot(WikidataBot):
         
         for record in self.records:
             if 'P214' in record:
+                print ("***************** New Record with VIAF *****************")
+                print (record)
                 item = get_entity_by_viaf(record['P214'])
             # if no viaf exist
             if not item:
@@ -115,9 +176,10 @@ class MarcClaimRobot(WikidataBot):
         #      Or, the proposed property value is not contained in this property,
         #           so - let's add it, along with a reference to NLI.
 
-        print (item.id) # TODO: this should actually be removed - this is TESTING ONLY
-        wikidata_record = TestCopier.new_test_item_from_production(item.id)
-        print("TestCopier created a new record under test.wikidata.org %s" % wikidata_record)
+        print (item.id)
+        # TODO: this should actually be removed - this is TESTING ONLY
+        # wikidata_record = TestCopier.new_test_item_from_production(item.id)
+        # print("TestCopier created a new record under test.wikidata.org %s" % wikidata_record)
 
         data = item.get("wikidata")
         wdClaims = data.get("claims")
@@ -202,8 +264,9 @@ def parse_records(marc_records):
                 if encoded_comment.decode('utf-8').startswith(u"מקצוע: "):
                     #parse death place
                     profession = parse_profession(encoded_comment.decode('utf-8').partition(u"מקצוע: ")[2])
-                    if (death_place is not None):
-                        death_place_dict[death_place[1]]=death_place[2] 
+                    if (profession is not None):
+                        print("FOUND PROFESSION! {0}".format(profession))
+                        
 
         
         wikidata_rec["birth_places"]=birth_place_dict
@@ -255,7 +318,7 @@ def parse_profession(profession):
         if (accepted_professions == profession):
             print ("found accepted profession!")
             return profession
-        elif (profession in hints):
+        elif (profession in hints['synonyms']):
             print ("profession is in hints!!")
             return profession
     
@@ -267,7 +330,7 @@ def parse_profession(profession):
 # Finds the matching record in Wikidata by VIAF identifier
 def get_entity_by_viaf(viaf):
     sparql = "SELECT ?item WHERE { ?item wdt:P214 ?VIAF filter(?VIAF = '%s') }" % viaf
-    entities = pagegenerators.WikidataSPARQLPageGenerator(sparql, site=repo)
+    entities = pagegenerators.WikidataQueryPageGenerator(sparql, site=repo)
     entities = list(entities)
     if len(entities) == 0:
         return None
@@ -345,7 +408,8 @@ def get_suggested_entity(claim):
     return entities[0]
 
 def create_new_record_in_wikidata(record):
-    raise NotImplemented
+    print("Not Implemented!")
+    # raise NotImplemented
 
 def main():
     # TODO: for now we use the example XML. in post development this should be argument

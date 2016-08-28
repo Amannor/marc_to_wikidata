@@ -24,6 +24,7 @@ property_to_xpath = {
     'P106' : 'slim:datafield[@tag="372"]/slim:subfield[@code="a"]',  # Activity (Person/Intitution)
     'P571' : 'slim:datafield[@tag="046"]/slim:subfield[@code="s"]',  # Start date of organization (110)
     'P576' : 'slim:datafield[@tag="046"]/slim:subfield[@code="t"]',  # End date of organization (110)
+    'P106' : '', # Profession. This field can be fetched only smartly by parse_profession
     
 }
 language_map = {
@@ -114,8 +115,7 @@ class MarcClaimRobot(WikidataBot):
         #      Or, the proposed property value is not contained in this property,
         #           so - let's add it, along with a reference to NLI.
 
-        print (item.id)
-        # TODO: this should actually be removed - this is TESTING ONLY
+        print (item.id) # TODO: this should actually be removed - this is TESTING ONLY
         wikidata_record = TestCopier.new_test_item_from_production(item.id)
         print("TestCopier created a new record under test.wikidata.org %s" % wikidata_record)
 

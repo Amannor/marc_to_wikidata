@@ -1,3 +1,4 @@
+import pywikibot
 from pywikibot import pagegenerators
 from Util import language_map
 

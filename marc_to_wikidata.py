@@ -4,8 +4,12 @@ from lxml import objectify
 
 import pywikibot
 from pywikibot import pagegenerators, WikidataBot
-
+from Fields.datebirthndeath import *
+from Fields.profession import parse_profession
+from searchEntityNoViaf import get_suggested_entity
+from storeInWikidata import create_new_record_in_wikidata
 import TestCopier
+from Util import language_map
 
 repo = pywikibot.Site().data_repository()
 namespaces = {'slim': 'http://www.loc.gov/MARC21/slim'}
@@ -24,95 +28,6 @@ property_to_xpath = {
     'P106' : 'slim:datafield[@tag="372"]/slim:subfield[@code="a"]',  # Activity (Person/Intitution)
     'P571' : 'slim:datafield[@tag="046"]/slim:subfield[@code="s"]',  # Start date of organization (110)
     'P576' : 'slim:datafield[@tag="046"]/slim:subfield[@code="t"]',  # End date of organization (110)
-}
-language_map = {
-    'ara': 'ar',
-    'cyr': 'ru',
-    'fre': 'fr',
-    'heb': 'he',
-    'lat': 'en',
-}
-
-# a dictionary of professions and "hints" that might reinforce confidence in their parsing in case of
-# ambiguous meanings
-# TODO: change this from map to a different data structure that contains synonyms and clues, separately!!!
-profession_map = {
-    'רב': {
-            'hints': ['קהילה','קהילות','קהילת'],
-            'wikidata_item': ['Q133485'],
-            'synonyms': ['רבה'],
-    },
-    'אב\"ד': {
-            'hints': ['אב בית דין'],
-            'wikidata_item': ['Q694994'],
-            'synonyms': []
-    },
-    'אדמו\"ר': {
-            'hints': [],
-            'wikidata_item': ['Q359351'],
-            'synonyms': ['אדמור'],
-    },
-    'אדירכל': {
-        'hints': [],
-        'wikidata_item': ['Q42973'],
-        'synonyms': ['אדריכלית'],
-    },
-    'מדען': {
-        'hints': [],
-        'wikidata_item': ['Q901'],
-        'synonyms': ['מדענית'],  
-    },
-    'איש-צבא': {
-        'hints': [],
-        'wikidata_item': ['Q220098'],
-        'synonyms':['מצביא','איש צבא', 'ראש המטה הכללי', 'רמטכ\"ל'],
-    },
-    'אמן':  {
-        'hints': [],
-        'wikidata_item': ['Q483501'],
-        'synonyms':['אמנית']
-    },
-    'דיין': {
-        'hints': [],
-        'wikidata_item': ['Q3570351'],
-        'synonyms':['דיינית']
-    },
-    'דרשן': {
-        'hints': [],
-        'wikidata_item': ['Q1884050'],
-        'synonyms':[]
-    },
-    'היסטוריון': {
-        'hints': [],
-        'wikidata_item': ['Q201788'],
-        'synonyms':['']
-    },
-    'חבר כנסת': {
-        'hints': [],
-        'wikidata_item': ['Q4047513'],
-        'synonyms':['חבר-כנסת','ח\"כ'],
-    },
-
-    'מורה': {
-        'hints': [],
-        'wikidata_item': ['Q37226'],
-        'synonyms':['']
-    },
-    'משורר': {
-        'hints': [],
-        'wikidata_item': ['Q49757'],
-        'synonyms':['משוררת']
-    },
-    'מלחין': {
-        'hints': [],
-        'wikidata_item': ['Q36834'],
-        'synonyms': ['מלחינה'],
-    },
-    'סופר': { 
-        'hints': [],
-        'wikidata_item': ['Q36180'],
-        'synonyms': ['סופרת']
-    }
 }
 
 
@@ -280,52 +195,6 @@ def parse_records(marc_records):
 
         yield wikidata_rec
 
-#, return tuple (lang code - 'eng' or 'heb', and actual place) or None if input is bad
-def parse_birth_or_death_place(place_type,place):
-    """
-    Parse birth/death place for a person based on NLI authority records
-    (clean it from unwanted stuff in square brackets)
-
-    If args is an empty list, sys.argv is used.
-
-    @param place_type: type of place - 'birth_place' or 'death_place'
-    @param place: the unicode string of the place
-    @return a three item tuple containing (place_type,language ('eng' or 'heb'),parsed place) or None on invalid input
-    """
-    
-    # drop stuff within brackets 
-    if place.find('[') >= 0 and place.find(']') >= 0:
-        #print ("indexes: [: {0} ]: {1} ".format(birthplace.index('['),birthplace.index(']')))
-        place_without_brackets = place.partition(place[place.index('['):place.index(']')+1])
-        if (len(place_without_brackets[0])==0 and len(place_without_brackets[2])==0):
-            #print('received birthplace within brackets - skipping')
-            return None 
-        else:
-            place = place_without_brackets[0]+place_without_brackets[2]  
-        #print(birthplace.decode('utf-8').partition(birthplace[birthplace.index('['):birthplace.index(']')]))
-
-    if any(u"\u0590" <= c <= u"\u05EA" for c in place):
-        lang='heb'
-    else:
-        lang='eng'
-    tup = (place_type,lang,place)
-    print ('output tuple: {0}'.format(tup))
-    return tup
-
-def parse_profession(profession):
-    print ("Got input profession {0}".format(profession));
-    for (accepted_professions, hints) in profession_map.iteritems():
-        if (accepted_professions == profession):
-            print ("found accepted profession!")
-            return profession
-        elif (profession in hints['synonyms']):
-            print ("profession is in hints!!")
-            return profession
-    
-    print("Input for {0} did not yield a profession".format(profession))
-    return None
-        
-
 
 # Finds the matching record in Wikidata by VIAF identifier
 def get_entity_by_viaf(viaf):
@@ -339,77 +208,6 @@ def get_entity_by_viaf(viaf):
         raise Exception('VIAF is expected to be unique')
     return entities[0]
 
-
-def get_suggested_entity(claim):
-    """Search for people by names and dates."""
-
-    # Matching names
-    languages_sparql = []
-    for lang in claim:
-        if lang in language_map:
-            languages_sparql.append('{ ?item rdfs:label "%(name)s"@%(lang)s }' % {
-                'name': claim[lang],
-                'lang': language_map[lang],
-            })
-    if not len(languages_sparql):
-        return None
-    languages_sparql = ' UNION '.join(languages_sparql)
-
-    # Matching birth date
-    birth_sparql = ''
-    if 'P569' in claim:
-        birth_sparql = """
-            . {
-                ?item wdt:P569 ?birthDate .
-                FILTER (datatype(?birthDate) != xsd:dateTime)
-            } UNION {
-                ?item wdt:P569 ?birthDate .
-                FILTER (year(?birthDate) = year("%(birth_date)s"^^xsd:dateTime))
-                FILTER (month(?birthDate) = month("%(birth_date)s"^^xsd:dateTime))
-                FILTER (day(?birthDate) = day("%(birth_date)s"^^xsd:dateTime))
-            }
-        """ % { 'birth_date': claim['P569'] }
-
-    # Matching death date
-    death_sparql = ''
-    if 'P570' in claim:
-        death_sparql = """
-            . {
-                ?item wdt:P570 ?deathDate .
-                FILTER (datatype(?deathDate) != xsd:dateTime)
-            } UNION {
-                ?item wdt:P570 ?deathDate .
-                FILTER (year(?deathDate) = year("%(death_date)s"^^xsd:dateTime))
-                FILTER (month(?deathDate) = month("%(death_date)s"^^xsd:dateTime))
-                FILTER (day(?deathDate) = day("%(death_date)s"^^xsd:dateTime))
-            }
-        """ % { 'death_date': claim['P570'] }
-
-    # Final request
-    sparql = """
-        SELECT DISTINCT ?item WHERE {
-            %(languages)s
-            %(birth)s
-            %(death)s
-        }
-    """ % {
-        'languages': languages_sparql,
-        'birth': birth_sparql,
-        'death': death_sparql,
-    }
-
-    entities = pagegenerators.WikidataSPARQLPageGenerator(sparql.encode('utf8'), site=repo)
-    entities = list(entities)
-    if len(entities) == 0:
-        return None
-    elif len(entities) > 1:
-        # TODO: is it possible to have multiple VIAFs?
-        raise Exception('VIAF is expected to be unique')
-    return entities[0]
-
-def create_new_record_in_wikidata(record):
-    print("Not Implemented!")
-    # raise NotImplemented
 
 def main():
     # TODO: for now we use the example XML. in post development this should be argument
